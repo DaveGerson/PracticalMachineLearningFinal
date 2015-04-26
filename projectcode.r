@@ -27,12 +27,11 @@ naCount <- function(x) sum( is.na( x ) )
 train <- train[ , sapply(test,naCount) == 0 ]
 train <- train[ , sapply(train,naCount) == 0 ]
 
-#no method is assigned since random forest is the default
-model = as.formula(paste("classe ~ ", paste( names(train)[names(train) != "classe"]  , collapse = " + " )))  
-
 inTrain = createDataPartition(train$classe, p = 3/4)[[1]]
 training = train[ inTrain,]
 testing = train[-inTrain,]
+
+model = as.formula(paste("classe ~ ", paste( names(train)[names(train) != "classe"]  , collapse = " + " )))  
 trainObj <- randomForest( model  , data=training, importance=TRUE, ntree= 106)
 preds <- data.frame( pred = predict(trainObj, testing) , actual  =  testing$classe )
 

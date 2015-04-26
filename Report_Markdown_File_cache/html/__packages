@@ -1,0 +1,10 @@
+base
+rpart
+lattice
+RevoScaleR
+RevoMods
+Revobase
+ggplot2
+caret
+AppliedPredictiveModeling
+randomForest

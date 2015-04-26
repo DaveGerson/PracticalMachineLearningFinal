@@ -62,9 +62,46 @@ In order to actually make a prediction with Random Forest you need to erase all 
 nrow(na.omit(train))
 ```
 
-To combat this I decided the simpler solution was to erase all columns which were not fully populated in the test set.  While I lost a large number of columns, the columns that were erased wer sparsely populated and couldn't help me develop the neccesary predictive model.
+To combat this I decided the simpler solution was to erase all columns which were not fully populated in the test set.  While I lost a large number of columns, the columns that were erased wer sparsely populated and couldn't help me develop the neccesary predictive model anyways.
 
+```{r , cache=TRUE}
+naCount <- function(x) sum( is.na( x ) )
+train <- train[ , sapply(test,naCount) == 0 ]
+train <- train[ , sapply(train,naCount) == 0 ]
+```
 
+#Modeling
+At this point I finally jumped into the modeling stage.  Per best practice I pulled out a training and test set of my training data.  
+```{r , cache=TRUE}
+inTrain = createDataPartition(train$classe, p = 3/4)[[1]]
+training = train[ inTrain,]
+testing = train[-inTrain,]
+```
 
+The Open Source R implementation of Random Forest interestingly enough does not include the ability to use the . notation for variable selection.  The below function provides a formula object that works functionally similarly. 
 
+```{r , cache=TRUE}
+model = as.formula(paste("classe ~ ", paste( names(train)[names(train) != "classe"]  , collapse = " + " )))  
+```
 
+Finaly I began the Random Forest process.  I used standard model parameters since Random Forest doesn't require that much tuning to operate properly.  The only variable I did change was the number of tree's, which I set to double the number of variables.  This was an attempt to reign in what I saw as a high potential for overfitting. 
+
+```{r , cache=TRUE}
+trainObj <- randomForest( model  , data=training, importance=TRUE, ntree= 106)
+```
+
+Using the below formula I create a very quick and dirty confusion vector.  This Vector shows me that out of 4904 testing observations my model only incorrectly predicted 4.  
+
+```{r , cache=TRUE}
+summary( as.factor(paste( pred = predict(trainObj, testing) , actual  =  testing$classe )))
+```
+
+Since the model was over 99.9 percent accurate I felt comfortable running it against the test data provided.  Since I had used the available variables in the test to help clean my training data there were no issues deploying my model on the test set of data.
+
+```{r , cache=TRUE}
+test[,sapply(test, class) == "factor"] <- data.frame(sapply(test[,sapply(test, class) == "factor"], as.numeric))
+test <- test[,names(test) %in% names(train) ]
+preds <- predict(trainObj, test)
+
+pml_write_files( as.character(preds) )
+```
