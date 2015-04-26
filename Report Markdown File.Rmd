@@ -1,0 +1,70 @@
+---
+title: "PracticalMachineLearning"
+output: html_document
+---
+
+#Introduction
+The practical machine learning final assessment was an involved effort in processing, munging and finally analyzing data.  While I took a more "nuclear" approach to data cleansing that in many real life scenario's may have diminished the accuracy of my model a great deal.  However in the context of this assignment the heavily cleansed data still produced close to 100% accuracy.  While this model was robust enough for the current problem I would have liked a larger testing set for the model in order to validate it's effectiveness
+
+#The Process
+### Initial Load
+I began the process by loading the data and the environment to include all packages and data that appeared to be prudent.  I also loaded the pml output function earlier, rather than later. 
+
+
+```{r , cache=TRUE}
+library(caret)
+library(AppliedPredictiveModeling)
+require(randomForest)
+
+setwd("C:/Users/gerson64/Desktop/Dropbox Sync/Dropbox/Coursera/practicalMachineLearning/project/")
+train <- read.csv("pml-training.csv")
+test <- read.csv("pml-testing.csv")
+
+pml_write_files = function(x){
+  n = length(x)
+  for(i in 1:n){
+    filename = paste0("problem_id_",i,".txt")
+    write.table(x[i],file=filename,quote=FALSE,row.names=FALSE,col.names=FALSE)
+  }
+}
+```
+
+
+After loading the data I inspected the target variable in order to make sure the dataset was fully populated and so that I had an approximate sense of the proportion of each action I was attempting to predict.  
+
+```{r , cache=TRUE}
+summary(train$classe)
+```
+
+After a visual inspection of the data I noticed that the user name did not match the user names in the test set making it impossible to match on and that the column x was simply a count of the variable, something which could lead to future overfitting.  Because of this I removed it from both the training and test set in order to keep both data sets synced.
+
+```{r , cache=TRUE}
+train<-train[,3:length(train)]
+test<-test[,3:length(test)]
+```
+
+
+###Prepping for the model
+The first model I was going to implement was a random-forest because it is not only a good technique for variable selection but it is also famous for being relatively predictive.  
+
+Unfortunately Random Forest has some hard limits around the number of factors which it can handle.  To work around this I simply converted all factors to numeric variables.  Since many of the factors in the data set were erroneously cast that way the easiest solution appeared to be to just convert all factors to numeric.  
+
+```{r , cache=TRUE}
+defactored <- data.frame(sapply(train[,sapply(train, class) == "factor"], as.numeric))
+train[,sapply(train, class) == "factor" & names(train) != "classe"] <- defactored[,1:length(defactored) - 1]
+test[,sapply(test, class) == "factor"] <- data.frame(sapply(test[,sapply(test, class) == "factor"], as.numeric))
+```
+Once again this was done on both the train and test set.  
+
+In order to actually make a prediction with Random Forest you need to erase all nulls.  After experimenting with erasing all nulls on a row by row basis, I discovered a majority of my training samples were now gone.  
+
+```{r }
+nrow(na.omit(train))
+```
+
+To combat this I decided the simpler solution was to erase all columns which were not fully populated in the test set.  While I lost a large number of columns, the columns that were erased wer sparsely populated and couldn't help me develop the neccesary predictive model.
+
+
+
+
+
